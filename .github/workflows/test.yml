@@ -15,5 +15,5 @@ jobs:
       - name: Test Action
         uses: JonathanTreffler/screenshot-action@main
         with:
-          url: https://google.com
+          url: https://dev.epicgames.com/community/learning/tutorials/vvz1/unreal-engine-dirty-screen-effect-tutorial
           destination: ./screenshot.png
