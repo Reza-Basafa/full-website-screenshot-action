@@ -29,5 +29,6 @@ runs:
       run: |
         set -euo pipefail
         node -e 'const u = new URL(process.env.TARGET_URL); if (!["http:", "https:"].includes(u.protocol)) { console.error("URL must use http:// or https://"); process.exit(1); }'
-        capture-website "$TARGET_URL" --output "$DESTINATION" --full-page
+        mkdir -p "$(dirname "$DESTINATION")"
+        capture-website "$TARGET_URL" --output "$DESTINATION" --full-page --launch-options='{"args":["--no-sandbox","--disable-setuid-sandbox"]}'
         echo "Screenshot saved to: $DESTINATION"
