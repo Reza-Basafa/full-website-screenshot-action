@@ -1,0 +1,70 @@
+name: Website Health Radar
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "Public website URL to inspect (include https://)"
+        required: true
+        type: string
+      device:
+        description: "Lighthouse device profile"
+        required: true
+        type: choice
+        options:
+          - mobile
+          - desktop
+        default: mobile
+
+permissions:
+  contents: read
+
+concurrency:
+  group: website-health-radar-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  inspect:
+    name: Capture and audit website
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Validate target URL
+        env:
+          TARGET_URL: ${{ inputs.url }}
+        shell: bash
+        run: |
+          node -e 'const u = new URL(process.env.TARGET_URL); if (!["http:", "https:"].includes(u.protocol)) process.exit(1); console.log("Target:", u.origin)'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install browser audit tools
+        run: |
+          npm install --global capture-website-cli lighthouse
+      - name: Capture full-page screenshot
+        env:
+          TARGET_URL: ${{ inputs.url }}
+        run: capture-website "$TARGET_URL" --output website-screenshot.png --full-page
+      - name: Run Lighthouse audit
+        env:
+          TARGET_URL: ${{ inputs.url }}
+          DEVICE: ${{ inputs.device }}
+        shell: bash
+        run: |
+          if [ "$DEVICE" = "desktop" ]; then
+            lighthouse "$TARGET_URL" --preset=desktop --output=json --output=html --output-path=./lighthouse-report --chrome-flags="--headless --no-sandbox"
+          else
+            lighthouse "$TARGET_URL" --output=json --output=html --output-path=./lighthouse-report --chrome-flags="--headless --no-sandbox"
+          fi
+      - name: Publish inspection artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: website-health-radar-${{ github.run_number }}
+          path: |
+            website-screenshot.png
+            lighthouse-report.report.html
+            lighthouse-report.report.json
+          if-no-files-found: warn
+          retention-days: 14
