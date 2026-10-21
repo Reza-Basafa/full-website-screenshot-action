@@ -1,0 +1,37 @@
+name: Website Screenshot
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "Public website URL to capture (include https://)"
+        required: true
+        type: string
+      destination:
+        description: "Screenshot output path"
+        required: true
+        type: string
+        default: "screenshot.png"
+
+permissions:
+  contents: read
+
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Capture website
+        uses: ./
+        with:
+          url: ${{ inputs.url }}
+          destination: ${{ inputs.destination }}
+      - name: Upload screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: website-screenshot
+          path: ${{ inputs.destination }}
+          if-no-files-found: error
+          retention-days: 14
