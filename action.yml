@@ -1,29 +1,33 @@
-name: 'Screenshot Action'
-description: 'This Action uses Puppeteer to capture a full screenshot of a website and save it'
+name: "Screenshot Action"
+description: "Capture a full-page screenshot of a website using Puppeteer"
 inputs:
   url:
-    description: 'The URL of the site, that should get captured'
+    description: "Public website URL to capture (include https://)"
     required: true
-    default: ''
   destination:
-    description: 'Where to save the screenshot'
+    description: "Output screenshot path"
     required: false
-    default: './screenshot.png'
+    default: "./screenshot.png"
 branding:
-  icon: 'layout'  
-  color: 'orange'
+  icon: "camera"
+  color: "orange"
 runs:
   using: "composite"
   steps:
-  - name: Install capture-website-cli
-    shell: bash
-    run: |
-      echo "Installing dependencies ..."
-      npm install --global capture-website-cli 1> /dev/null
-      echo "Dependencies installed successfully"
-  
-  - name: Screenshot Website
-    shell: bash
-    run: |
-      capture-website ${{ inputs.url }} --output ${{ inputs.destination }} --full-page
-      echo "Screenshot done"
+    - name: Set up Node.js 20
+      uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+    - name: Install capture-website-cli
+      shell: bash
+      run: npm install --global capture-website-cli
+    - name: Capture full-page screenshot
+      shell: bash
+      env:
+        TARGET_URL: ${{ inputs.url }}
+        DESTINATION: ${{ inputs.destination }}
+      run: |
+        set -euo pipefail
+        node -e 'const u = new URL(process.env.TARGET_URL); if (!["http:", "https:"].includes(u.protocol)) { console.error("URL must use http:// or https://"); process.exit(1); }'
+        capture-website "$TARGET_URL" --output "$DESTINATION" --full-page
+        echo "Screenshot saved to: $DESTINATION"
